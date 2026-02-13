@@ -4,6 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
 <title>I Love The Zou</title>
+
+<!-- Favicon: heart SVG -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>❤️</text></svg>">
+<link rel="apple-touch-icon" href="og-image.png">
+
+<!-- Social / Open Graph -->
+<meta property="og:title" content="I Love The Zou">
+<meta property="og:description" content="A Valentine's Day Game — Catch Zouzou! 💕">
+<meta property="og:image" content="https://ilovethezou.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://ilovethezou.com">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="I Love The Zou">
+<meta name="twitter:description" content="A Valentine's Day Game — Catch Zouzou! 💕">
+<meta name="twitter:image" content="https://ilovethezou.com/og-image.png">
+<meta name="description" content="A Valentine's Day Game — Catch Zouzou! 💕">
+<meta name="theme-color" content="#1a0a1e">
+
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -182,6 +202,8 @@ let keys = {};
 let touchDir = { x: 0, y: 0 };
 let touchActive = false;
 let touchStartX = 0, touchStartY = 0;
+let lastTapTime = 0;
+let touchSprinting = false;
 
 const player = { x: 0, y: 0, vx: 0, vy: 0, facing: 1, moving: false, sprinting: false };
 const bot = { x: 0, y: 0, vx: 0, vy: 0, facing: -1, moving: false, changeTimer: 0, pauseTimer: 0, paused: false };
@@ -554,6 +576,12 @@ function setupInput() {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     touchActive = true;
+    // Double-tap detection for sprint toggle
+    const now = Date.now();
+    if (now - lastTapTime < 350) {
+      touchSprinting = !touchSprinting;
+    }
+    lastTapTime = now;
   });
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
@@ -635,7 +663,7 @@ function updateBot(dt) {
 // ============================================================
 function updatePlayer(dt) {
   const dir = getInputDir();
-  player.sprinting = keys[' '] || keys['shift'];
+  player.sprinting = keys[' '] || keys['shift'] || touchSprinting;
   const speed = PLAYER_SPEED * (player.sprinting ? SPRINT_MULT : 1);
   player.vx = dir.x * speed;
   player.vy = dir.y * speed;
@@ -772,7 +800,7 @@ function initGame() {
   });
 
   if ('ontouchstart' in window) {
-    document.getElementById('instructions').textContent = 'Touch and drag to move · Double tap to sprint';
+    document.getElementById('instructions').textContent = 'Touch and drag to move · Double tap to toggle sprint';
   }
   requestAnimationFrame(gameLoop);
 }
@@ -788,6 +816,7 @@ function startGame() {
   gameState = 'playing';
   gameTime = 0; frameCount = 0;
   hearts = []; bgHearts = [];
+  touchSprinting = false;
 
   player.x = W * 0.25; player.y = H * 0.55;
   player.vx = 0; player.vy = 0;
