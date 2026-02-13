@@ -113,7 +113,7 @@
   <button class="btn" id="playBtn">Catch Zouzou!</button>
 </div>
 <canvas id="gameCanvas"></canvas>
-<div id="instructions">WASD or Arrow Keys to move</div>
+<div id="instructions">WASD or Arrow Keys to move · Hold Space to sprint</div>
 <div id="catchOverlay">
   <canvas id="catchCanvas" width="360" height="300"></canvas>
   <h2>I Love You Zouzou!</h2>
@@ -126,6 +126,7 @@
 // CONSTANTS
 // ============================================================
 const PLAYER_SPEED = 210;
+const SPRINT_MULT = 1.5;
 const BOT_SPEED = 140;
 const CATCH_DIST = 42;
 const OL = '#1a1215'; // outline color
@@ -143,7 +144,7 @@ let touchDir = { x: 0, y: 0 };
 let touchActive = false;
 let touchStartX = 0, touchStartY = 0;
 
-const player = { x: 0, y: 0, vx: 0, vy: 0, facing: 1, moving: false };
+const player = { x: 0, y: 0, vx: 0, vy: 0, facing: 1, moving: false, sprinting: false };
 const bot = { x: 0, y: 0, vx: 0, vy: 0, facing: -1, moving: false, changeTimer: 0, pauseTimer: 0, paused: false };
 let hearts = [];
 let bgHearts = [];
@@ -207,70 +208,148 @@ function drawFace(c, img, loaded, bodyY, faceW, overlap, offX, offY) {
 }
 
 // ============================================================
-// DRAW LOULOU (pose: 'run' | 'idle' | 'hug')
+// SHARED BODY DRAWING (pixel-art style with smooth animation)
+// ============================================================
+function drawBody(c, frame, pose, isSprinting, colors) {
+  // colors: { shirt, shirtHi, shirtLo, pants, pantsHi, shoes, skin, neckW }
+  const isRun = pose === 'run';
+  const isHug = pose === 'hug';
+  const t = frame * (isSprinting ? 0.55 : 0.4); // animation speed
+  const bounce = isRun ? Math.abs(Math.sin(t)) * 3 : 0;
+  const lean = isRun ? (isSprinting ? 3 : 1.5) : 0; // forward lean when running
+
+  // Smooth sinusoidal leg cycle
+  const legCycle = isRun ? Math.sin(t) : 0;
+  const legL = legCycle * (isSprinting ? 8 : 6);   // left leg offset
+  const legR = -legL;                                // right leg opposite
+
+  // Arm swing (opposite to legs)
+  const armSwing = isRun ? Math.sin(t) * (isSprinting ? 6 : 4) : 0;
+
+  // --- LEGS ---
+  const legW = 11, legH = 18, legGap = 3;
+
+  // Left leg
+  c.save();
+  c.translate(-legGap - legW/2, 0);
+  c.rotate(legL * 0.03);
+  c.beginPath(); rr(c, -legW/2, -legH + legL * 0.5, legW, legH, [3,3,4,4]); fillShape(c, colors.pants);
+  // Knee highlight
+  c.beginPath(); rr(c, -legW/2+2, -legH + legL*0.5 + legH*0.4, legW-4, 4, 2); fillOnly(c, colors.pantsHi);
+  // Shoe
+  c.beginPath(); rr(c, -legW/2 - 1, legL*0.5 - 2, legW + 3, 7, [2,2,5,5]); fillShape(c, colors.shoes);
+  c.restore();
+
+  // Right leg
+  c.save();
+  c.translate(legGap + legW/2, 0);
+  c.rotate(legR * 0.03);
+  c.beginPath(); rr(c, -legW/2, -legH + legR * 0.5, legW, legH, [3,3,4,4]); fillShape(c, colors.pants);
+  c.beginPath(); rr(c, -legW/2+2, -legH + legR*0.5 + legH*0.4, legW-4, 4, 2); fillOnly(c, colors.pantsHi);
+  c.beginPath(); rr(c, -legW/2 - 1, legR*0.5 - 2, legW + 3, 7, [2,2,5,5]); fillShape(c, colors.shoes);
+  c.restore();
+
+  // --- TORSO ---
+  const bodyW = 34, bodyH = 26;
+  const bodyY = -legH - bodyH + 8 + bounce;
+
+  c.save();
+  c.translate(lean, 0); // lean forward when running
+
+  // Torso
+  c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, [7,7,5,5]); fillShape(c, colors.shirt);
+  // Shoulder highlights
+  c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 6, 4); fillOnly(c, colors.shirtHi);
+  // Bottom shadow
+  c.beginPath(); rr(c, -bodyW/2+2, bodyY+bodyH-7, bodyW-4, 5, 3); fillOnly(c, colors.shirtLo);
+  // Collar / neckline
+  c.beginPath();
+  c.moveTo(-6, bodyY); c.quadraticCurveTo(0, bodyY + 5, 6, bodyY);
+  c.strokeStyle = colors.shirtLo; c.lineWidth = 1.5; c.stroke();
+
+  // --- BACK ARM (behind body) ---
+  const armW = 10, armH = 22;
+  const armY = bodyY + 4;
+  if (isHug) {
+    // Back arm hangs
+    c.beginPath(); rr(c, -bodyW/2-armW+4, armY+1, armW, armH, 5); fillShape(c, colors.shirt);
+    c.beginPath(); c.arc(-bodyW/2-armW/2+4, armY+armH+2, 5, 0, Math.PI*2); fillShape(c, colors.skin);
+  } else {
+    c.save();
+    c.translate(-bodyW/2-armW/2+4, armY);
+    c.rotate(armSwing * 0.04);
+    c.beginPath(); rr(c, -armW/2, 0, armW, armH, 5); fillShape(c, colors.shirt);
+    // Elbow highlight
+    c.beginPath(); rr(c, -armW/2+2, armH*0.35, armW-4, 4, 2); fillOnly(c, colors.shirtHi);
+    // Hand
+    c.beginPath(); c.arc(0, armH + 2, 5, 0, Math.PI*2); fillShape(c, colors.skin);
+    c.restore();
+  }
+
+  // --- FRONT ARM ---
+  if (isHug) {
+    // Front arm reaches forward
+    c.save();
+    c.translate(bodyW/2+armW/2-4, armY - 4);
+    c.rotate(-0.4); // angled up for hug
+    c.beginPath(); rr(c, -armW/2, 0, armW, armH-2, 5); fillShape(c, colors.shirt);
+    c.beginPath(); c.arc(0, armH - 2, 5, 0, Math.PI*2); fillShape(c, colors.skin);
+    c.restore();
+  } else {
+    c.save();
+    c.translate(bodyW/2+armW/2-4, armY);
+    c.rotate(-armSwing * 0.04);
+    c.beginPath(); rr(c, -armW/2, 0, armW, armH, 5); fillShape(c, colors.shirt);
+    c.beginPath(); rr(c, -armW/2+2, armH*0.35, armW-4, 4, 2); fillOnly(c, colors.shirtHi);
+    c.beginPath(); c.arc(0, armH + 2, 5, 0, Math.PI*2); fillShape(c, colors.skin);
+    c.restore();
+  }
+
+  // --- NECKLACE ---
+  c.strokeStyle = '#DAA520'; c.lineWidth = colors.neckW;
+  c.beginPath(); c.arc(0, bodyY+4, 10, 0.25, Math.PI-0.25); c.stroke();
+  c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+14, 2.5, 0, Math.PI*2); c.fill();
+
+  c.restore(); // undo lean
+
+  return bodyY + bounce; // return bodyY for face positioning
+}
+
+// ============================================================
+// DRAW LOULOU
 // ============================================================
 function drawLoulou(c, bx, by, frame, facing, scl, pose) {
   const sc = scl || 1;
+  const sprint = player.sprinting && player.moving;
   pose = pose || (player.moving ? 'run' : 'idle');
   c.save();
   c.translate(bx, by);
   c.scale(sc * (facing >= 0 ? 1 : -1), sc);
 
-  const isRun = pose === 'run';
-  const isHug = pose === 'hug';
-  const wf = isRun ? Math.floor(frame / 5) % 4 : 0;
-  const bounce = isRun ? Math.sin(frame * 0.35) * 2 : 0;
-
-  // --- LEGS (black pants) ---
-  const legW = 10, legH = 16, legGap = 4;
-  let lOff = 0, rOff = 0;
-  if (isRun) {
-    if (wf === 1) { lOff = -4; rOff = 3; }
-    else if (wf === 3) { lOff = 3; rOff = -4; }
-  }
-  c.beginPath(); rr(c, -legGap - legW, -legH + lOff, legW, legH, 3); fillShape(c, '#222');
-  c.beginPath(); rr(c, -legGap - legW - 1, lOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#111');
-  c.beginPath(); rr(c, legGap, -legH + rOff, legW, legH, 3); fillShape(c, '#222');
-  c.beginPath(); rr(c, legGap - 1, rOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#111');
-
-  // --- BODY ---
-  const bodyW = 32, bodyH = 24;
-  const bodyY = -legH - bodyH + 6 + bounce;
-
-  // --- BODY (black shirt) ---
-  c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, 6); fillShape(c, '#1a1a1a');
-  c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 8, 4); fillOnly(c, 'rgba(255,255,255,0.04)');
-
-  // --- ARMS ---
-  const armW = 10, armH = 22, armY = bodyY + 3;
-  if (isHug) {
-    c.beginPath(); rr(c, bodyW/2-2, armY-6, armW, armH-2, 5); fillShape(c, '#1a1a1a');
-    c.beginPath(); c.arc(bodyW/2+armW-2, armY-6+armH/2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-    c.beginPath(); rr(c, -bodyW/2-armW+3, armY, armW, armH, 5); fillShape(c, '#1a1a1a');
-    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-  } else {
-    let laSwing = 0, raSwing = 0;
-    if (wf === 1) { laSwing = 2; raSwing = -2; }
-    else if (wf === 3) { laSwing = -2; raSwing = 2; }
-    c.beginPath(); rr(c, -bodyW/2-armW+3, armY+laSwing, armW, armH, 5); fillShape(c, '#1a1a1a');
-    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+2+laSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-    c.beginPath(); rr(c, bodyW/2-3, armY+raSwing, armW, armH, 5); fillShape(c, '#1a1a1a');
-    c.beginPath(); c.arc(bodyW/2+armW/2-3, armY+armH+2+raSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+  // Sprint dust particles
+  if (sprint && pose === 'run' && frame % 3 === 0) {
+    c.globalAlpha = 0.3;
+    c.fillStyle = '#8a7060';
+    for (let i = 0; i < 3; i++) {
+      const dx = -8 - Math.random() * 12;
+      const dy = -2 + Math.random() * 8;
+      c.beginPath(); c.arc(dx, dy, 1.5 + Math.random()*2, 0, Math.PI*2); c.fill();
+    }
+    c.globalAlpha = 1;
   }
 
-  // --- NECKLACE ---
-  c.strokeStyle = '#DAA520'; c.lineWidth = 2.5;
-  c.beginPath(); c.arc(0, bodyY+3, 10, 0.3, Math.PI-0.3); c.stroke();
-  c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+13, 2.5, 0, Math.PI*2); c.fill();
+  const bodyY = drawBody(c, frame, pose, sprint, {
+    shirt: '#1a1a1a', shirtHi: 'rgba(255,255,255,0.06)', shirtLo: 'rgba(255,255,255,0.03)',
+    pants: '#222', pantsHi: 'rgba(255,255,255,0.05)',
+    shoes: '#111', skin: '#FDDCB5', neckW: 2.5
+  });
 
-  // --- FACE (drawn last so it's in front of body) ---
   drawFace(c, loulouFaceImg, loulouFaceLoaded, bodyY, 50, 16);
-
   c.restore();
 }
 
 // ============================================================
-// DRAW ZOUZOU (pose: 'run' | 'idle' | 'hug')
+// DRAW ZOUZOU
 // ============================================================
 function drawZouzou(c, bx, by, frame, facing, scl, pose) {
   const sc = scl || 1;
@@ -279,57 +358,13 @@ function drawZouzou(c, bx, by, frame, facing, scl, pose) {
   c.translate(bx, by);
   c.scale(sc * (facing >= 0 ? 1 : -1), sc);
 
-  const isRun = pose === 'run';
-  const isHug = pose === 'hug';
-  const wf = isRun ? Math.floor(frame / 5) % 4 : 0;
-  const bounce = isRun ? Math.sin(frame * 0.35) * 2 : 0;
+  const bodyY = drawBody(c, frame, pose, false, {
+    shirt: '#2E8B57', shirtHi: 'rgba(255,255,255,0.1)', shirtLo: 'rgba(0,60,30,0.15)',
+    pants: '#4A6FA5', pantsHi: 'rgba(255,255,255,0.08)',
+    shoes: '#C9B896', skin: '#FDDCB5', neckW: 2
+  });
 
-  // --- LEGS (jeans) ---
-  const legW = 10, legH = 16, legGap = 4;
-  let lOff = 0, rOff = 0;
-  if (isRun) {
-    if (wf === 1) { lOff = -4; rOff = 3; }
-    else if (wf === 3) { lOff = 3; rOff = -4; }
-  }
-  c.beginPath(); rr(c, -legGap - legW, -legH + lOff, legW, legH, 3); fillShape(c, '#4A6FA5');
-  c.beginPath(); rr(c, -legGap - legW - 1, lOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#C9B896');
-  c.beginPath(); rr(c, legGap, -legH + rOff, legW, legH, 3); fillShape(c, '#4A6FA5');
-  c.beginPath(); rr(c, legGap - 1, rOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#C9B896');
-
-  // --- BODY ---
-  const bodyW = 30, bodyH = 22;
-  const bodyY = -legH - bodyH + 6 + bounce;
-
-  // --- BODY (green top) ---
-  c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, 6); fillShape(c, '#2E8B57');
-  c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 7, 4); fillOnly(c, 'rgba(255,255,255,0.07)');
-  c.beginPath(); rr(c, -bodyW/2+2, bodyY+bodyH-8, bodyW-4, 6, 4); fillOnly(c, 'rgba(0,0,0,0.08)');
-
-  // --- ARMS ---
-  const armW = 9, armH = 20, armY = bodyY + 3;
-  if (isHug) {
-    c.beginPath(); rr(c, bodyW/2-2, armY-6, armW, armH-2, 5); fillShape(c, '#2E8B57');
-    c.beginPath(); c.arc(bodyW/2+armW-2, armY-6+armH/2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-    c.beginPath(); rr(c, -bodyW/2-armW+3, armY, armW, armH, 5); fillShape(c, '#2E8B57');
-    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+1, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-  } else {
-    let laSwing = 0, raSwing = 0;
-    if (wf === 1) { laSwing = 2; raSwing = -2; }
-    else if (wf === 3) { laSwing = -2; raSwing = 2; }
-    c.beginPath(); rr(c, -bodyW/2-armW+3, armY+laSwing, armW, armH, 5); fillShape(c, '#2E8B57');
-    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+1+laSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-    c.beginPath(); rr(c, bodyW/2-3, armY+raSwing, armW, armH, 5); fillShape(c, '#2E8B57');
-    c.beginPath(); c.arc(bodyW/2+armW/2-3, armY+armH+1+raSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
-  }
-
-  // --- NECKLACE ---
-  c.strokeStyle = '#DAA520'; c.lineWidth = 2;
-  c.beginPath(); c.arc(0, bodyY+3, 9, 0.3, Math.PI-0.3); c.stroke();
-  c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+12, 2, 0, Math.PI*2); c.fill();
-
-  // --- FACE (drawn last so it's in front of body, shifted left and down to align) ---
   drawFace(c, zouzouFaceImg, zouzouFaceLoaded, bodyY, 48, 16, -3, 4);
-
   c.restore();
 }
 
@@ -561,8 +596,10 @@ function updateBot(dt) {
 // ============================================================
 function updatePlayer(dt) {
   const dir = getInputDir();
-  player.vx = dir.x * PLAYER_SPEED;
-  player.vy = dir.y * PLAYER_SPEED;
+  player.sprinting = keys[' '] || keys['shift'];
+  const speed = PLAYER_SPEED * (player.sprinting ? SPRINT_MULT : 1);
+  player.vx = dir.x * speed;
+  player.vy = dir.y * speed;
   player.moving = dir.x !== 0 || dir.y !== 0;
   player.x += player.vx * dt;
   player.y += player.vy * dt;
@@ -643,7 +680,7 @@ function initGame() {
   });
 
   if ('ontouchstart' in window) {
-    document.getElementById('instructions').textContent = 'Touch and drag to move';
+    document.getElementById('instructions').textContent = 'Touch and drag to move · Double tap to sprint';
   }
   requestAnimationFrame(gameLoop);
 }
