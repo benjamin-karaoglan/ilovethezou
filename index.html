@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>I Love The Zou</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    overflow: hidden;
+    background: #1a0a1e;
+    font-family: 'Georgia', serif;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Landing Screen */
+  #landing {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a0a1e 0%, #2d1b35 50%, #1a0a1e 100%);
+    z-index: 10;
+    transition: opacity 0.6s ease;
+  }
+  #landing.hidden { opacity: 0; pointer-events: none; }
+
+  #landing h1 {
+    font-size: clamp(2rem, 8vw, 4rem);
+    color: #ff6b8a;
+    text-shadow: 0 0 30px rgba(255,107,138,0.5), 0 0 60px rgba(255,107,138,0.2);
+    margin-bottom: 0.3rem;
+    letter-spacing: 2px;
+  }
+  #landing .subtitle {
+    color: #ffb3c6;
+    font-size: clamp(0.9rem, 3vw, 1.3rem);
+    margin-bottom: 2.5rem;
+    font-style: italic;
+    opacity: 0.8;
+  }
+  #landing .heart-icon {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    margin-bottom: 1rem;
+    color: #ff4d6d;
+    text-shadow: 0 0 20px rgba(255,77,109,0.6);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .btn {
+    padding: 15px 50px;
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    background: linear-gradient(135deg, #ff6b8a, #ff4d6d);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 20px rgba(255,77,109,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+  }
+  .btn:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(255,77,109,0.6); }
+  .btn:active { transform: scale(0.98); }
+
+  /* Game Canvas */
+  #gameCanvas {
+    display: none;
+    position: fixed;
+    inset: 0;
+  }
+
+  #instructions {
+    display: none;
+    position: fixed;
+    bottom: 15px;
+    left: 50%; transform: translateX(-50%);
+    color: rgba(255,179,198,0.5);
+    font-size: 0.8rem;
+    z-index: 5;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 2s ease;
+  }
+
+  /* Catch Overlay */
+  #catchOverlay {
+    position: fixed; inset: 0;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(26,10,30,0.92);
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  #catchOverlay.visible { opacity: 1; }
+
+  #catchOverlay h2 {
+    font-size: clamp(1.8rem, 7vw, 3rem);
+    color: #ff6b8a;
+    text-shadow: 0 0 40px rgba(255,107,138,0.8), 0 0 80px rgba(255,107,138,0.3);
+    margin-bottom: 0.5rem;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  #catchOverlay .timer-text {
+    color: #ffb3c6;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.7;
+  }
+  #catchOverlay canvas {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Floating hearts background */
+  .hearts-bg {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .heart-float {
+    position: absolute;
+    bottom: -30px;
+    color: rgba(255,107,138,0.12);
+    animation: floatUp linear infinite;
+  }
+
+  @keyframes floatUp {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+    5% { opacity: 1; }
+    95% { opacity: 1; }
+    100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating Hearts Background -->
+<div class="hearts-bg" id="heartsBg"></div>
+
+<!-- Landing Screen -->
+<div id="landing">
+  <div class="heart-icon">&#10084;</div>
+  <h1>I Love The Zou</h1>
+  <p class="subtitle">A Valentine's Day Game</p>
+  <button class="btn" id="playBtn">Catch Zouzou!</button>
+</div>
+
+<!-- Game Canvas -->
+<canvas id="gameCanvas"></canvas>
+<div id="instructions">WASD or Arrow Keys to move</div>
+
+<!-- Catch Overlay -->
+<div id="catchOverlay">
+  <canvas id="catchCanvas" width="320" height="260"></canvas>
+  <h2>I Love You Zouzou!</h2>
+  <p class="timer-text" id="timerText"></p>
+  <button class="btn" id="replayBtn">Play Again</button>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const PX = 4;
+const PLAYER_SPEED = 200;
+const BOT_SPEED = 135;
+const CATCH_DIST = 38;
+
+// ============================================================
+// COLORS
+// ============================================================
+const C_LOU = {
+  hair: '#D4A853', hairDk: '#B89040',
+  skin: '#FDDCB5', skinDk: '#E8C9A0',
+  eyeW: '#FFFFFF', eye: '#4A7A8F', pupil: '#1a2a35',
+  beard: '#C26B3A', beardDk: '#A85530',
+  shirt: '#1a1a1a', pants: '#222', shoes: '#111',
+  gold: '#DAA520', cheek: '#F4BFA8'
+};
+const C_ZOU = {
+  hair: '#7A5A3A', hairDk: '#614830',
+  skin: '#FDDCB5', skinDk: '#E8C9A0',
+  eyeW: '#FFFFFF', eye: '#5C3317', pupil: '#2a1a0a',
+  frame: '#3D2B1F', frameDk: '#2A1D14', lens: '#C8C0AA',
+  mouth: '#D4737D',
+  top: '#2E8B57', topDk: '#257A4A',
+  jeans: '#4A6FA5', jeansDk: '#3D5E8C',
+  shoes: '#C9B896', gold: '#DAA520', cheek: '#F4BFA8'
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let canvas, ctx, catchCanvas, catchCtx;
+let W, H;
+let gameState = 'landing'; // landing | playing | caught
+let gameTime = 0;
+let frameCount = 0;
+let keys = {};
+let touchDir = { x: 0, y: 0 };
+let touchActive = false;
+let touchStartX = 0, touchStartY = 0;
+
+const player = { x: 0, y: 0, vx: 0, vy: 0, facing: 1, moving: false };
+const bot = { x: 0, y: 0, vx: 0, vy: 0, facing: -1, moving: false, changeTimer: 0, pauseTimer: 0, paused: false };
+let hearts = [];
+let bgHearts = [];
+let catchHearts = [];
+let lastTime = 0;
+
+// ============================================================
+// PIXEL DRAWING HELPER
+// ============================================================
+function px(c, x, y, w, h, color) {
+  c.fillStyle = color;
+  c.fillRect(x * PX, y * PX, w * PX, h * PX);
+}
+
+// ============================================================
+// DRAW LOULOU (Player)
+// ============================================================
+function drawLoulou(c, bx, by, frame, facing, scale) {
+  const s = scale || 1;
+  c.save();
+  c.translate(bx, by);
+  c.scale(s, s);
+  if (facing < 0) c.scale(-1, 1);
+
+  const r = (x, y, w, h, col) => px(c, x, y, w, h, col);
+  const walk = player.moving ? Math.floor(frame / 6) % 4 : 0;
+
+  // Hair (blonde, medium length flowing)
+  r(-4, -22, 8, 3, C_LOU.hair);
+  r(-5, -19, 10, 2, C_LOU.hair);
+  r(-5, -19, 2, 8, C_LOU.hair);  // left flowing
+  r(4, -19, 2, 7, C_LOU.hair);   // right flowing
+  r(-4, -22, 1, 3, C_LOU.hairDk); // shadow
+
+  // Head
+  r(-4, -17, 8, 8, C_LOU.skin);
+
+  // Eyes
+  r(-3, -14, 2, 2, C_LOU.eyeW);
+  r(1, -14, 2, 2, C_LOU.eyeW);
+  r(-2, -14, 1, 2, C_LOU.pupil);
+  r(2, -14, 1, 2, C_LOU.pupil);
+
+  // Cheek blush
+  r(-4, -12, 1, 1, C_LOU.cheek);
+  r(3, -12, 1, 1, C_LOU.cheek);
+
+  // Beard (ginger, prominent)
+  r(-3, -11, 6, 2, C_LOU.beard);
+  r(-2, -9, 4, 1, C_LOU.beard);
+  r(-1, -8, 2, 1, C_LOU.beard);
+  // Mouth area
+  r(-1, -10, 2, 1, C_LOU.beardDk);
+
+  // Torso (black) - draw before neck details
+  r(-4, -7, 8, 4, C_LOU.shirt);
+
+  // Arms
+  r(-5, -6, 1, 3, C_LOU.shirt);
+  r(4, -6, 1, 3, C_LOU.shirt);
+
+  // Hands
+  r(-5, -3, 1, 1, C_LOU.skin);
+  r(4, -3, 1, 1, C_LOU.skin);
+
+  // Neck (on top of shirt)
+  r(-1, -8, 2, 1, C_LOU.skin);
+
+  // Gold necklace (on top of shirt)
+  r(-2, -7, 4, 1, C_LOU.gold);
+
+  // Legs and shoes (animated)
+  if (walk === 0 || walk === 2) {
+    r(-3, -3, 2, 3, C_LOU.pants);
+    r(1, -3, 2, 3, C_LOU.pants);
+    r(-3, 0, 2, 1, C_LOU.shoes);
+    r(1, 0, 2, 1, C_LOU.shoes);
+  } else if (walk === 1) {
+    r(-3, -3, 2, 3, C_LOU.pants);
+    r(1, -2, 2, 3, C_LOU.pants);
+    r(-3, 0, 2, 1, C_LOU.shoes);
+    r(1, 1, 2, 1, C_LOU.shoes);
+  } else {
+    r(-3, -2, 2, 3, C_LOU.pants);
+    r(1, -3, 2, 3, C_LOU.pants);
+    r(-3, 1, 2, 1, C_LOU.shoes);
+    r(1, 0, 2, 1, C_LOU.shoes);
+  }
+
+  c.restore();
+}
+
+// ============================================================
+// DRAW ZOUZOU (Bot)
+// ============================================================
+function drawZouzou(c, bx, by, frame, facing, scale) {
+  const s = scale || 1;
+  c.save();
+  c.translate(bx, by);
+  c.scale(s, s);
+  if (facing < 0) c.scale(-1, 1);
+
+  const r = (x, y, w, h, col) => px(c, x, y, w, h, col);
+  const walk = bot.moving ? Math.floor(frame / 6) % 4 : 0;
+
+  // Hair (brown, longer, past shoulders)
+  r(-4, -22, 8, 3, C_ZOU.hair);
+  r(-5, -19, 10, 2, C_ZOU.hair);
+  r(-5, -19, 2, 10, C_ZOU.hair);  // left long
+  r(4, -19, 2, 10, C_ZOU.hair);   // right long
+  r(-4, -22, 1, 3, C_ZOU.hairDk);
+
+  // Head
+  r(-4, -17, 8, 8, C_ZOU.skin);
+
+  // BIG SQUARE GLASSES (tortoiseshell, oversized!)
+  // Left frame
+  r(-5, -16, 5, 4, C_ZOU.frame);
+  // Left lens
+  r(-4, -15, 3, 2, C_ZOU.lens);
+  // Right frame
+  r(0, -16, 5, 4, C_ZOU.frame);
+  // Right lens
+  r(1, -15, 3, 2, C_ZOU.lens);
+  // Bridge
+  r(-1, -15, 2, 1, C_ZOU.frameDk);
+
+  // Eyes behind glasses
+  r(-4, -15, 1, 1, C_ZOU.eyeW);
+  r(-3, -15, 1, 1, C_ZOU.eye);
+  r(2, -15, 1, 1, C_ZOU.eyeW);
+  r(3, -15, 1, 1, C_ZOU.eye);
+
+  // Cheeks
+  r(-4, -12, 1, 1, C_ZOU.cheek);
+  r(3, -12, 1, 1, C_ZOU.cheek);
+
+  // Mouth (pink lips - cute smile)
+  r(-1, -11, 2, 1, C_ZOU.mouth);
+
+  // Green top - draw before neck details
+  r(-4, -7, 8, 4, C_ZOU.top);
+
+  // Arms (green)
+  r(-5, -6, 1, 3, C_ZOU.top);
+  r(4, -6, 1, 3, C_ZOU.top);
+
+  // Hands
+  r(-5, -3, 1, 1, C_ZOU.skin);
+  r(4, -3, 1, 1, C_ZOU.skin);
+
+  // Neck (on top of shirt)
+  r(-1, -8, 2, 1, C_ZOU.skin);
+
+  // Necklace (on top of shirt)
+  r(-2, -7, 4, 1, C_ZOU.gold);
+
+  // Jeans + shoes (animated)
+  if (walk === 0 || walk === 2) {
+    r(-3, -3, 2, 3, C_ZOU.jeans);
+    r(1, -3, 2, 3, C_ZOU.jeans);
+    r(-3, 0, 2, 1, C_ZOU.shoes);
+    r(1, 0, 2, 1, C_ZOU.shoes);
+  } else if (walk === 1) {
+    r(-3, -3, 2, 3, C_ZOU.jeans);
+    r(1, -2, 2, 3, C_ZOU.jeans);
+    r(-3, 0, 2, 1, C_ZOU.shoes);
+    r(1, 1, 2, 1, C_ZOU.shoes);
+  } else {
+    r(-3, -2, 2, 3, C_ZOU.jeans);
+    r(1, -3, 2, 3, C_ZOU.jeans);
+    r(-3, 1, 2, 1, C_ZOU.shoes);
+    r(1, 0, 2, 1, C_ZOU.shoes);
+  }
+
+  c.restore();
+}
+
+// ============================================================
+// DRAW HEART SHAPE
+// ============================================================
+function drawHeart(c, x, y, size, color) {
+  c.save();
+  c.translate(x, y);
+  c.fillStyle = color;
+  c.beginPath();
+  const s = size;
+  c.moveTo(0, s * 0.3);
+  c.bezierCurveTo(0, 0, -s, 0, -s, s * 0.35);
+  c.bezierCurveTo(-s, s * 0.75, 0, s * 0.95, 0, s * 1.2);
+  c.bezierCurveTo(0, s * 0.95, s, s * 0.75, s, s * 0.35);
+  c.bezierCurveTo(s, 0, 0, 0, 0, s * 0.3);
+  c.fill();
+  c.restore();
+}
+
+// ============================================================
+// HEART PARTICLES
+// ============================================================
+function spawnHeart(x, y, burst) {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = burst ? 80 + Math.random() * 150 : 20 + Math.random() * 40;
+  const colors = ['#ff4d6d', '#ff6b8a', '#ff8fa3', '#ffb3c6', '#ff1744', '#e91e63'];
+  hearts.push({
+    x, y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed - (burst ? 60 : 30),
+    size: 4 + Math.random() * 8,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    life: 1.5 + Math.random() * 1.5,
+    maxLife: 2.5,
+    rot: Math.random() * Math.PI * 2
+  });
+}
+
+function updateHearts(dt) {
+  for (let i = hearts.length - 1; i >= 0; i--) {
+    const h = hearts[i];
+    h.x += h.vx * dt;
+    h.y += h.vy * dt;
+    h.vy += 40 * dt;
+    h.life -= dt;
+    h.rot += dt * 2;
+    if (h.life <= 0) hearts.splice(i, 1);
+  }
+}
+
+function drawHearts(c) {
+  for (const h of hearts) {
+    c.save();
+    c.globalAlpha = Math.min(1, h.life / 0.5);
+    c.translate(h.x, h.y);
+    c.rotate(h.rot);
+    drawHeart(c, 0, 0, h.size, h.color);
+    c.restore();
+  }
+  c.globalAlpha = 1;
+}
+
+// ============================================================
+// BACKGROUND HEARTS (floating)
+// ============================================================
+function initBgHearts() {
+  const container = document.getElementById('heartsBg');
+  for (let i = 0; i < 15; i++) {
+    const h = document.createElement('span');
+    h.className = 'heart-float';
+    h.textContent = '\u2764';
+    h.style.left = Math.random() * 100 + '%';
+    h.style.fontSize = (1 + Math.random() * 2) + 'rem';
+    h.style.animationDuration = (8 + Math.random() * 12) + 's';
+    h.style.animationDelay = (Math.random() * 10) + 's';
+    container.appendChild(h);
+  }
+}
+
+// ============================================================
+// GAME BACKGROUND
+// ============================================================
+function drawGameBg(c) {
+  const grad = c.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#1e0f28');
+  grad.addColorStop(0.5, '#2d1b35');
+  grad.addColorStop(1, '#1a0a1e');
+  c.fillStyle = grad;
+  c.fillRect(0, 0, W, H);
+
+  // Subtle ground
+  c.fillStyle = 'rgba(255,107,138,0.03)';
+  c.fillRect(0, H * 0.85, W, H * 0.15);
+
+  // Ambient floating hearts in game
+  for (const h of bgHearts) {
+    c.save();
+    c.globalAlpha = h.alpha;
+    drawHeart(c, h.x, h.y, h.size, 'rgba(255,107,138,0.15)');
+    c.restore();
+  }
+  c.globalAlpha = 1;
+}
+
+function updateBgHearts(dt) {
+  if (bgHearts.length < 8 && Math.random() < dt * 0.5) {
+    bgHearts.push({
+      x: Math.random() * W,
+      y: H + 20,
+      size: 5 + Math.random() * 12,
+      speed: 15 + Math.random() * 25,
+      alpha: 0.05 + Math.random() * 0.1
+    });
+  }
+  for (let i = bgHearts.length - 1; i >= 0; i--) {
+    bgHearts[i].y -= bgHearts[i].speed * dt;
+    if (bgHearts[i].y < -30) bgHearts.splice(i, 1);
+  }
+}
+
+// ============================================================
+// NAME LABELS
+// ============================================================
+function drawCharShadow(c, x, y) {
+  c.save();
+  c.globalAlpha = 0.25;
+  c.fillStyle = '#000';
+  c.beginPath();
+  c.ellipse(x, y + 4, 18, 6, 0, 0, Math.PI * 2);
+  c.fill();
+  c.restore();
+}
+
+function drawLabel(c, x, y, name, color) {
+  c.font = 'bold 12px Georgia, serif';
+  c.textAlign = 'center';
+  c.fillStyle = 'rgba(0,0,0,0.4)';
+  c.fillText(name, x + 1, y + 1);
+  c.fillStyle = color;
+  c.fillText(name, x, y);
+}
+
+// ============================================================
+// INPUT HANDLING
+// ============================================================
+function setupInput() {
+  window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) {
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  // Touch controls
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    touchActive = true;
+  });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!touchActive) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 10) {
+      touchDir.x = dx / dist;
+      touchDir.y = dy / dist;
+    }
+  });
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    touchActive = false;
+    touchDir.x = 0;
+    touchDir.y = 0;
+  });
+}
+
+function getInputDir() {
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup']) dy -= 1;
+  if (keys['s'] || keys['arrowdown']) dy += 1;
+  if (keys['a'] || keys['arrowleft']) dx -= 1;
+  if (keys['d'] || keys['arrowright']) dx += 1;
+
+  if (touchActive && (touchDir.x !== 0 || touchDir.y !== 0)) {
+    dx = touchDir.x;
+    dy = touchDir.y;
+  }
+
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len > 0) return { x: dx / len, y: dy / len };
+  return { x: 0, y: 0 };
+}
+
+// ============================================================
+// BOT AI
+// ============================================================
+function updateBot(dt) {
+  const dx = bot.x - player.x;
+  const dy = bot.y - player.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const margin = 40;
+
+  // Random pause mechanic
+  bot.pauseTimer -= dt;
+  if (!bot.paused && Math.random() < dt * 0.15 && dist > 180) {
+    bot.paused = true;
+    bot.pauseTimer = 0.3 + Math.random() * 0.6;
+  }
+  if (bot.paused && bot.pauseTimer <= 0) {
+    bot.paused = false;
+  }
+
+  if (bot.paused) {
+    bot.vx *= 0.9;
+    bot.vy *= 0.9;
+    bot.moving = false;
+  } else if (dist < 160) {
+    // Run away directly
+    const flee = dist > 0 ? 1 / dist : 1;
+    bot.vx += dx * flee * BOT_SPEED * 5 * dt;
+    bot.vy += dy * flee * BOT_SPEED * 5 * dt;
+    bot.moving = true;
+  } else {
+    // Wander vaguely away
+    bot.changeTimer -= dt;
+    if (bot.changeTimer <= 0) {
+      const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 2;
+      bot.vx = Math.cos(angle) * BOT_SPEED * 0.6;
+      bot.vy = Math.sin(angle) * BOT_SPEED * 0.6;
+      bot.changeTimer = 0.8 + Math.random() * 1.5;
+    }
+    bot.moving = true;
+  }
+
+  // Clamp speed
+  const spd = Math.sqrt(bot.vx * bot.vx + bot.vy * bot.vy);
+  if (spd > BOT_SPEED) {
+    bot.vx = (bot.vx / spd) * BOT_SPEED;
+    bot.vy = (bot.vy / spd) * BOT_SPEED;
+  }
+
+  // Friction
+  bot.vx *= Math.pow(0.02, dt);
+  bot.vy *= Math.pow(0.02, dt);
+
+  bot.x += bot.vx * dt;
+  bot.y += bot.vy * dt;
+
+  // Wall bounce
+  if (bot.x < margin) { bot.x = margin; bot.vx = Math.abs(bot.vx) * 0.8; }
+  if (bot.x > W - margin) { bot.x = W - margin; bot.vx = -Math.abs(bot.vx) * 0.8; }
+  if (bot.y < margin + 30) { bot.y = margin + 30; bot.vy = Math.abs(bot.vy) * 0.8; }
+  if (bot.y > H - margin) { bot.y = H - margin; bot.vy = -Math.abs(bot.vy) * 0.8; }
+
+  // Facing
+  if (Math.abs(bot.vx) > 5) bot.facing = bot.vx > 0 ? 1 : -1;
+}
+
+// ============================================================
+// PLAYER UPDATE
+// ============================================================
+function updatePlayer(dt) {
+  const dir = getInputDir();
+  player.vx = dir.x * PLAYER_SPEED;
+  player.vy = dir.y * PLAYER_SPEED;
+  player.moving = dir.x !== 0 || dir.y !== 0;
+
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+
+  const margin = 30;
+  player.x = Math.max(margin, Math.min(W - margin, player.x));
+  player.y = Math.max(margin + 30, Math.min(H - margin, player.y));
+
+  if (Math.abs(player.vx) > 5) player.facing = player.vx > 0 ? 1 : -1;
+}
+
+// ============================================================
+// COLLISION CHECK
+// ============================================================
+function checkCatch() {
+  const dx = player.x - bot.x;
+  const dy = player.y - bot.y;
+  return Math.sqrt(dx * dx + dy * dy) < CATCH_DIST;
+}
+
+// ============================================================
+// CATCH CELEBRATION
+// ============================================================
+function triggerCatch() {
+  gameState = 'caught';
+
+  // Spawn burst of hearts
+  for (let i = 0; i < 40; i++) {
+    spawnHeart((player.x + bot.x) / 2, (player.y + bot.y) / 2 - 30, true);
+  }
+
+  // Show overlay after a short delay
+  setTimeout(() => {
+    const overlay = document.getElementById('catchOverlay');
+    overlay.style.display = 'flex';
+    document.getElementById('timerText').textContent =
+      'Caught in ' + gameTime.toFixed(1) + ' seconds!';
+    drawCatchScene();
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+  }, 1200);
+}
+
+function drawCatchScene() {
+  const cc = catchCtx;
+  const cw = catchCanvas.width;
+  const ch = catchCanvas.height;
+
+  cc.clearRect(0, 0, cw, ch);
+
+  // Draw both characters close together (hugging)
+  const cx = cw / 2;
+  const cy = ch * 0.75;
+
+  drawLoulou(cc, cx - 24, cy, 0, 1, 1.3);
+  drawZouzou(cc, cx + 24, cy, 0, -1, 1.3);
+
+  // Heart above them
+  drawHeart(cc, cx, cy - 110, 16, '#ff4d6d');
+
+  // Small hearts around
+  drawHeart(cc, cx - 55, cy - 85, 7, '#ff8fa3');
+  drawHeart(cc, cx + 55, cy - 80, 8, '#ffb3c6');
+  drawHeart(cc, cx - 40, cy - 115, 6, '#ff6b8a');
+  drawHeart(cc, cx + 45, cy - 112, 5, '#ff4d6d');
+  drawHeart(cc, cx, cy - 135, 5, '#ffb3c6');
+}
+
+// ============================================================
+// GAME INIT
+// ============================================================
+function initGame() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  catchCanvas = document.getElementById('catchCanvas');
+  catchCtx = catchCanvas.getContext('2d');
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  setupInput();
+  initBgHearts();
+
+  // Play button
+  document.getElementById('playBtn').addEventListener('click', startGame);
+  document.getElementById('replayBtn').addEventListener('click', () => {
+    document.getElementById('catchOverlay').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('catchOverlay').style.display = 'none';
+      startGame();
+    }, 600);
+  });
+
+  // Detect mobile
+  if ('ontouchstart' in window) {
+    document.getElementById('instructions').textContent = 'Touch and drag to move';
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function resizeCanvas() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+}
+
+function startGame() {
+  gameState = 'playing';
+  gameTime = 0;
+  frameCount = 0;
+  hearts = [];
+  bgHearts = [];
+
+  // Position characters
+  player.x = W * 0.25;
+  player.y = H * 0.5;
+  player.vx = 0; player.vy = 0;
+  player.facing = 1;
+  player.moving = false;
+
+  bot.x = W * 0.75;
+  bot.y = H * 0.5;
+  bot.vx = 0; bot.vy = 0;
+  bot.facing = -1;
+  bot.moving = false;
+  bot.changeTimer = 1;
+  bot.paused = false;
+  bot.pauseTimer = 0;
+
+  document.getElementById('landing').classList.add('hidden');
+  canvas.style.display = 'block';
+  document.getElementById('instructions').style.display = 'block';
+
+  // Fade out instructions after a few seconds
+  setTimeout(() => {
+    document.getElementById('instructions').style.opacity = '0';
+  }, 4000);
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+function gameLoop(timestamp) {
+  const dt = Math.min(0.05, (timestamp - lastTime) / 1000);
+  lastTime = timestamp;
+
+  if (gameState === 'playing') {
+    gameTime += dt;
+    frameCount++;
+
+    updatePlayer(dt);
+    updateBot(dt);
+    updateBgHearts(dt);
+    updateHearts(dt);
+
+    // Zouzou trail hearts
+    if (bot.moving && frameCount % 20 === 0) {
+      spawnHeart(bot.x, bot.y, false);
+    }
+
+    // Check collision
+    if (checkCatch()) {
+      triggerCatch();
+    }
+
+    // Render
+    drawGameBg(ctx);
+
+    // Draw timer
+    ctx.font = '14px Georgia, serif';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,179,198,0.4)';
+    ctx.fillText(gameTime.toFixed(1) + 's', W - 15, 25);
+
+    // Draw characters (bot behind player)
+    drawCharShadow(ctx, bot.x, bot.y);
+    drawZouzou(ctx, bot.x, bot.y, frameCount, bot.facing);
+    drawLabel(ctx, bot.x, bot.y + 16, 'Zouzou', '#ffb3c6');
+
+    drawCharShadow(ctx, player.x, player.y);
+    drawLoulou(ctx, player.x, player.y, frameCount, player.facing);
+    drawLabel(ctx, player.x, player.y + 16, 'Loulou', '#ff8fa3');
+
+    drawHearts(ctx);
+  } else if (gameState === 'caught') {
+    // Continue rendering the caught moment
+    updateHearts(dt);
+    drawGameBg(ctx);
+
+    drawCharShadow(ctx, bot.x, bot.y);
+    drawZouzou(ctx, bot.x, bot.y, 0, bot.facing);
+    drawCharShadow(ctx, player.x, player.y);
+    drawLoulou(ctx, player.x, player.y, 0, player.facing);
+    drawHearts(ctx);
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', initGame);
+</script>
+</body>
+</html>
