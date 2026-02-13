@@ -274,11 +274,12 @@ for (let i = 13; i <= 16; i++) {
 function getSpriteIndex(dir, isMoving, isSprinting, animFrame) {
   if (!isMoving) return dir; // idle row: 0-3
   if (!isSprinting) {
-    // Toggle between idle and walk frames
+    // 2-frame walk cycle: idle ↔ walk
     return animFrame === 0 ? dir : (4 + dir);
   }
-  // Sprinting: toggle between walk and run frames
-  return animFrame === 0 ? (4 + dir) : (8 + dir);
+  // 4-frame sprint cycle: idle → walk → run → walk
+  const sprintSeq = [0, 4, 8, 4]; // offsets for idle, walk, run, walk
+  return sprintSeq[animFrame % 4] + dir;
 }
 
 function dirFromVelocity(vx, vy, currentDir) {
@@ -321,7 +322,7 @@ function drawLoulou(c, bx, by, frame, facing, scl) {
 
 function drawZouzou(c, bx, by, frame, facing, scl) {
   const sc = scl || 1;
-  drawCharacter(c, zouzouSprites, bx, by, bot.dir, bot.moving, false, bot.animFrame, sc);
+  drawCharacter(c, zouzouSprites, bx, by, bot.dir, bot.moving, bot.moving, bot.animFrame, sc);
 }
 
 // ============================================================
@@ -560,12 +561,12 @@ function updateBot(dt) {
   // Direction detection for sprites
   bot.dir = dirFromVelocity(bot.vx, bot.vy, bot.dir);
 
-  // Animation frame toggling (bot is always "running")
+  // Animation frame toggling (bot is always sprinting/fleeing — 4-frame cycle)
   bot.animTimer += dt;
-  const botAnimRate = 0.15;
+  const botAnimRate = 0.12;
   if (bot.animTimer >= botAnimRate) {
     bot.animTimer -= botAnimRate;
-    bot.animFrame = bot.animFrame === 0 ? 1 : 0;
+    bot.animFrame = (bot.animFrame + 1) % 4;
   }
 }
 
@@ -591,11 +592,12 @@ function updatePlayer(dt) {
 
   // Animation frame toggling
   if (player.moving) {
-    const rate = (player.sprinting) ? 0.15 : 0.25;
+    const rate = player.sprinting ? 0.12 : 0.25;
+    const maxFrames = player.sprinting ? 4 : 2;
     player.animTimer += dt;
     if (player.animTimer >= rate) {
       player.animTimer -= rate;
-      player.animFrame = player.animFrame === 0 ? 1 : 0;
+      player.animFrame = (player.animFrame + 1) % maxFrames;
     }
   } else {
     player.animTimer = 0;
