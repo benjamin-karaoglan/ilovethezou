@@ -195,12 +195,12 @@ function fillOnly(c, color) {
 // ============================================================
 // DRAW FACE HELPER
 // ============================================================
-function drawFace(c, img, loaded, bodyY, faceW, overlap) {
+function drawFace(c, img, loaded, bodyY, faceW, overlap, offX, offY) {
   if (!loaded) return;
   const fw = faceW;
   const fh = fw * (img.naturalHeight / img.naturalWidth);
-  const fx = -fw / 2;
-  const fy = bodyY + overlap - fh;
+  const fx = -fw / 2 + (offX || 0);
+  const fy = bodyY + overlap - fh + (offY || 0);
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
   c.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, fx, fy, fw, fh);
@@ -237,9 +237,6 @@ function drawLoulou(c, bx, by, frame, facing, scl, pose) {
   const bodyW = 32, bodyH = 24;
   const bodyY = -legH - bodyH + 6 + bounce;
 
-  // --- FACE ---
-  drawFace(c, loulouFaceImg, loulouFaceLoaded, bodyY, 50, 16);
-
   // --- BODY (black shirt) ---
   c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, 6); fillShape(c, '#1a1a1a');
   c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 8, 4); fillOnly(c, 'rgba(255,255,255,0.04)');
@@ -247,7 +244,6 @@ function drawLoulou(c, bx, by, frame, facing, scl, pose) {
   // --- ARMS ---
   const armW = 10, armH = 22, armY = bodyY + 3;
   if (isHug) {
-    // Arms reaching forward for hug
     c.beginPath(); rr(c, bodyW/2-2, armY-6, armW, armH-2, 5); fillShape(c, '#1a1a1a');
     c.beginPath(); c.arc(bodyW/2+armW-2, armY-6+armH/2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
     c.beginPath(); rr(c, -bodyW/2-armW+3, armY, armW, armH, 5); fillShape(c, '#1a1a1a');
@@ -266,6 +262,9 @@ function drawLoulou(c, bx, by, frame, facing, scl, pose) {
   c.strokeStyle = '#DAA520'; c.lineWidth = 2.5;
   c.beginPath(); c.arc(0, bodyY+3, 10, 0.3, Math.PI-0.3); c.stroke();
   c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+13, 2.5, 0, Math.PI*2); c.fill();
+
+  // --- FACE (drawn last so it's in front of body) ---
+  drawFace(c, loulouFaceImg, loulouFaceLoaded, bodyY, 50, 16);
 
   c.restore();
 }
@@ -301,9 +300,6 @@ function drawZouzou(c, bx, by, frame, facing, scl, pose) {
   const bodyW = 30, bodyH = 22;
   const bodyY = -legH - bodyH + 6 + bounce;
 
-  // --- FACE ---
-  drawFace(c, zouzouFaceImg, zouzouFaceLoaded, bodyY, 48, 16);
-
   // --- BODY (green top) ---
   c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, 6); fillShape(c, '#2E8B57');
   c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 7, 4); fillOnly(c, 'rgba(255,255,255,0.07)');
@@ -312,7 +308,6 @@ function drawZouzou(c, bx, by, frame, facing, scl, pose) {
   // --- ARMS ---
   const armW = 9, armH = 20, armY = bodyY + 3;
   if (isHug) {
-    // Arms reaching forward for hug
     c.beginPath(); rr(c, bodyW/2-2, armY-6, armW, armH-2, 5); fillShape(c, '#2E8B57');
     c.beginPath(); c.arc(bodyW/2+armW-2, armY-6+armH/2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
     c.beginPath(); rr(c, -bodyW/2-armW+3, armY, armW, armH, 5); fillShape(c, '#2E8B57');
@@ -331,6 +326,9 @@ function drawZouzou(c, bx, by, frame, facing, scl, pose) {
   c.strokeStyle = '#DAA520'; c.lineWidth = 2;
   c.beginPath(); c.arc(0, bodyY+3, 9, 0.3, Math.PI-0.3); c.stroke();
   c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+12, 2, 0, Math.PI*2); c.fill();
+
+  // --- FACE (drawn last so it's in front of body, shifted left and down to align) ---
+  drawFace(c, zouzouFaceImg, zouzouFaceLoaded, bodyY, 48, 16, -3, 4);
 
   c.restore();
 }
