@@ -14,8 +14,6 @@
     -webkit-user-select: none;
     user-select: none;
   }
-
-  /* Landing Screen */
   #landing {
     position: fixed; inset: 0;
     display: flex; flex-direction: column;
@@ -25,7 +23,6 @@
     transition: opacity 0.6s ease;
   }
   #landing.hidden { opacity: 0; pointer-events: none; }
-
   #landing h1 {
     font-size: clamp(2rem, 8vw, 4rem);
     color: #ff6b8a;
@@ -37,8 +34,7 @@
     color: #ffb3c6;
     font-size: clamp(0.9rem, 3vw, 1.3rem);
     margin-bottom: 2.5rem;
-    font-style: italic;
-    opacity: 0.8;
+    font-style: italic; opacity: 0.8;
   }
   #landing .heart-icon {
     font-size: clamp(2rem, 6vw, 3.5rem);
@@ -47,55 +43,35 @@
     text-shadow: 0 0 20px rgba(255,77,109,0.6);
     animation: pulse 1.5s ease-in-out infinite;
   }
-
   .btn {
     padding: 15px 50px;
     font-size: clamp(1rem, 3vw, 1.3rem);
     background: linear-gradient(135deg, #ff6b8a, #ff4d6d);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    font-family: inherit;
+    color: white; border: none; border-radius: 50px;
+    cursor: pointer; font-family: inherit;
     box-shadow: 0 4px 20px rgba(255,77,109,0.4);
     transition: transform 0.2s, box-shadow 0.2s;
     letter-spacing: 1px;
   }
   .btn:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(255,77,109,0.6); }
   .btn:active { transform: scale(0.98); }
-
-  /* Game Canvas */
-  #gameCanvas {
-    display: none;
-    position: fixed;
-    inset: 0;
-  }
-
+  #gameCanvas { display: none; position: fixed; inset: 0; }
   #instructions {
-    display: none;
-    position: fixed;
-    bottom: 15px;
+    display: none; position: fixed; bottom: 15px;
     left: 50%; transform: translateX(-50%);
-    color: rgba(255,179,198,0.5);
-    font-size: 0.8rem;
-    z-index: 5;
-    text-align: center;
-    pointer-events: none;
+    color: rgba(255,179,198,0.5); font-size: 0.8rem;
+    z-index: 5; text-align: center; pointer-events: none;
     transition: opacity 2s ease;
   }
-
-  /* Catch Overlay */
   #catchOverlay {
     position: fixed; inset: 0;
     display: none; flex-direction: column;
     align-items: center; justify-content: center;
     background: rgba(26,10,30,0.92);
-    z-index: 20;
-    opacity: 0;
+    z-index: 20; opacity: 0;
     transition: opacity 0.8s ease;
   }
   #catchOverlay.visible { opacity: 1; }
-
   #catchOverlay h2 {
     font-size: clamp(1.8rem, 7vw, 3rem);
     color: #ff6b8a;
@@ -104,33 +80,22 @@
     animation: pulse 1.5s ease-in-out infinite;
   }
   #catchOverlay .timer-text {
-    color: #ffb3c6;
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
-    opacity: 0.7;
+    color: #ffb3c6; font-size: 1rem;
+    margin-bottom: 1.5rem; opacity: 0.7;
   }
-  #catchOverlay canvas {
-    margin-bottom: 1.5rem;
-  }
-
-  /* Floating hearts background */
+  #catchOverlay canvas { margin-bottom: 1.5rem; }
   .hearts-bg {
-    position: fixed; inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 1;
+    position: fixed; inset: 0; pointer-events: none;
+    overflow: hidden; z-index: 1;
   }
   .heart-float {
-    position: absolute;
-    bottom: -30px;
+    position: absolute; bottom: -30px;
     color: rgba(255,107,138,0.12);
     animation: floatUp linear infinite;
   }
-
   @keyframes floatUp {
     0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-    5% { opacity: 1; }
-    95% { opacity: 1; }
+    5% { opacity: 1; } 95% { opacity: 1; }
     100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
   }
   @keyframes pulse {
@@ -140,25 +105,17 @@
 </style>
 </head>
 <body>
-
-<!-- Floating Hearts Background -->
 <div class="hearts-bg" id="heartsBg"></div>
-
-<!-- Landing Screen -->
 <div id="landing">
   <div class="heart-icon">&#10084;</div>
   <h1>I Love The Zou</h1>
   <p class="subtitle">A Valentine's Day Game</p>
   <button class="btn" id="playBtn">Catch Zouzou!</button>
 </div>
-
-<!-- Game Canvas -->
 <canvas id="gameCanvas"></canvas>
 <div id="instructions">WASD or Arrow Keys to move</div>
-
-<!-- Catch Overlay -->
 <div id="catchOverlay">
-  <canvas id="catchCanvas" width="320" height="260"></canvas>
+  <canvas id="catchCanvas" width="360" height="300"></canvas>
   <h2>I Love You Zouzou!</h2>
   <p class="timer-text" id="timerText"></p>
   <button class="btn" id="replayBtn">Play Again</button>
@@ -168,39 +125,17 @@
 // ============================================================
 // CONSTANTS
 // ============================================================
-const PX = 4;
-const PLAYER_SPEED = 200;
-const BOT_SPEED = 135;
-const CATCH_DIST = 38;
-
-// ============================================================
-// COLORS
-// ============================================================
-const C_LOU = {
-  hair: '#D4A853', hairDk: '#B89040',
-  skin: '#FDDCB5', skinDk: '#E8C9A0',
-  eyeW: '#FFFFFF', eye: '#4A7A8F', pupil: '#1a2a35',
-  beard: '#C26B3A', beardDk: '#A85530',
-  shirt: '#1a1a1a', pants: '#222', shoes: '#111',
-  gold: '#DAA520', cheek: '#F4BFA8'
-};
-const C_ZOU = {
-  hair: '#7A5A3A', hairDk: '#614830',
-  skin: '#FDDCB5', skinDk: '#E8C9A0',
-  eyeW: '#FFFFFF', eye: '#5C3317', pupil: '#2a1a0a',
-  frame: '#3D2B1F', frameDk: '#2A1D14', lens: '#C8C0AA',
-  mouth: '#D4737D',
-  top: '#2E8B57', topDk: '#257A4A',
-  jeans: '#4A6FA5', jeansDk: '#3D5E8C',
-  shoes: '#C9B896', gold: '#DAA520', cheek: '#F4BFA8'
-};
+const PLAYER_SPEED = 210;
+const BOT_SPEED = 140;
+const CATCH_DIST = 42;
+const OL = '#1a1215'; // outline color
 
 // ============================================================
 // STATE
 // ============================================================
 let canvas, ctx, catchCanvas, catchCtx;
 let W, H;
-let gameState = 'landing'; // landing | playing | caught
+let gameState = 'landing';
 let gameTime = 0;
 let frameCount = 0;
 let keys = {};
@@ -212,177 +147,190 @@ const player = { x: 0, y: 0, vx: 0, vy: 0, facing: 1, moving: false };
 const bot = { x: 0, y: 0, vx: 0, vy: 0, facing: -1, moving: false, changeTimer: 0, pauseTimer: 0, paused: false };
 let hearts = [];
 let bgHearts = [];
-let catchHearts = [];
 let lastTime = 0;
 
 // ============================================================
-// PIXEL DRAWING HELPER
+// FACE SPRITE LOADING
 // ============================================================
-function px(c, x, y, w, h, color) {
+let loulouFaceLoaded = false, zouzouFaceLoaded = false;
+const loulouFaceImg = new Image();
+const zouzouFaceImg = new Image();
+loulouFaceImg.onload = () => { loulouFaceLoaded = true; };
+zouzouFaceImg.onload = () => { zouzouFaceLoaded = true; };
+loulouFaceImg.src = 'loulou.png';
+zouzouFaceImg.src = 'zouzou.png';
+
+// ============================================================
+// DRAWING HELPERS
+// ============================================================
+function rr(c, x, y, w, h, radii) {
+  if (typeof radii === 'number') radii = [radii, radii, radii, radii];
+  const [tl, tr, br, bl] = radii;
+  c.moveTo(x + tl, y);
+  c.lineTo(x + w - tr, y);
+  c.arcTo(x + w, y, x + w, y + tr, tr);
+  c.lineTo(x + w, y + h - br);
+  c.arcTo(x + w, y + h, x + w - br, y + h, br);
+  c.lineTo(x + bl, y + h);
+  c.arcTo(x, y + h, x, y + h - bl, bl);
+  c.lineTo(x, y + tl);
+  c.arcTo(x, y, x + tl, y, tl);
+  c.closePath();
+}
+
+function fillShape(c, color) {
   c.fillStyle = color;
-  c.fillRect(x * PX, y * PX, w * PX, h * PX);
+  c.fill();
+  c.strokeStyle = OL;
+  c.lineWidth = 2.5;
+  c.lineJoin = 'round';
+  c.stroke();
+}
+
+function fillOnly(c, color) {
+  c.fillStyle = color;
+  c.fill();
 }
 
 // ============================================================
-// DRAW LOULOU (Player)
+// DRAW FACE HELPER
 // ============================================================
-function drawLoulou(c, bx, by, frame, facing, scale) {
-  const s = scale || 1;
+function drawFace(c, img, loaded, bodyY, faceW, overlap) {
+  if (!loaded) return;
+  const fw = faceW;
+  const fh = fw * (img.naturalHeight / img.naturalWidth);
+  const fx = -fw / 2;
+  const fy = bodyY + overlap - fh;
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, fx, fy, fw, fh);
+}
+
+// ============================================================
+// DRAW LOULOU (pose: 'run' | 'idle' | 'hug')
+// ============================================================
+function drawLoulou(c, bx, by, frame, facing, scl, pose) {
+  const sc = scl || 1;
+  pose = pose || (player.moving ? 'run' : 'idle');
   c.save();
   c.translate(bx, by);
-  c.scale(s, s);
-  if (facing < 0) c.scale(-1, 1);
+  c.scale(sc * (facing >= 0 ? 1 : -1), sc);
 
-  const r = (x, y, w, h, col) => px(c, x, y, w, h, col);
-  const walk = player.moving ? Math.floor(frame / 6) % 4 : 0;
+  const isRun = pose === 'run';
+  const isHug = pose === 'hug';
+  const wf = isRun ? Math.floor(frame / 5) % 4 : 0;
+  const bounce = isRun ? Math.sin(frame * 0.35) * 2 : 0;
 
-  // Hair (blonde, medium length flowing)
-  r(-4, -22, 8, 3, C_LOU.hair);
-  r(-5, -19, 10, 2, C_LOU.hair);
-  r(-5, -19, 2, 8, C_LOU.hair);  // left flowing
-  r(4, -19, 2, 7, C_LOU.hair);   // right flowing
-  r(-4, -22, 1, 3, C_LOU.hairDk); // shadow
-
-  // Head
-  r(-4, -17, 8, 8, C_LOU.skin);
-
-  // Eyes
-  r(-3, -14, 2, 2, C_LOU.eyeW);
-  r(1, -14, 2, 2, C_LOU.eyeW);
-  r(-2, -14, 1, 2, C_LOU.pupil);
-  r(2, -14, 1, 2, C_LOU.pupil);
-
-  // Cheek blush
-  r(-4, -12, 1, 1, C_LOU.cheek);
-  r(3, -12, 1, 1, C_LOU.cheek);
-
-  // Beard (ginger, prominent)
-  r(-3, -11, 6, 2, C_LOU.beard);
-  r(-2, -9, 4, 1, C_LOU.beard);
-  r(-1, -8, 2, 1, C_LOU.beard);
-  // Mouth area
-  r(-1, -10, 2, 1, C_LOU.beardDk);
-
-  // Torso (black) - draw before neck details
-  r(-4, -7, 8, 4, C_LOU.shirt);
-
-  // Arms
-  r(-5, -6, 1, 3, C_LOU.shirt);
-  r(4, -6, 1, 3, C_LOU.shirt);
-
-  // Hands
-  r(-5, -3, 1, 1, C_LOU.skin);
-  r(4, -3, 1, 1, C_LOU.skin);
-
-  // Neck (on top of shirt)
-  r(-1, -8, 2, 1, C_LOU.skin);
-
-  // Gold necklace (on top of shirt)
-  r(-2, -7, 4, 1, C_LOU.gold);
-
-  // Legs and shoes (animated)
-  if (walk === 0 || walk === 2) {
-    r(-3, -3, 2, 3, C_LOU.pants);
-    r(1, -3, 2, 3, C_LOU.pants);
-    r(-3, 0, 2, 1, C_LOU.shoes);
-    r(1, 0, 2, 1, C_LOU.shoes);
-  } else if (walk === 1) {
-    r(-3, -3, 2, 3, C_LOU.pants);
-    r(1, -2, 2, 3, C_LOU.pants);
-    r(-3, 0, 2, 1, C_LOU.shoes);
-    r(1, 1, 2, 1, C_LOU.shoes);
-  } else {
-    r(-3, -2, 2, 3, C_LOU.pants);
-    r(1, -3, 2, 3, C_LOU.pants);
-    r(-3, 1, 2, 1, C_LOU.shoes);
-    r(1, 0, 2, 1, C_LOU.shoes);
+  // --- LEGS (black pants) ---
+  const legW = 10, legH = 16, legGap = 4;
+  let lOff = 0, rOff = 0;
+  if (isRun) {
+    if (wf === 1) { lOff = -4; rOff = 3; }
+    else if (wf === 3) { lOff = 3; rOff = -4; }
   }
+  c.beginPath(); rr(c, -legGap - legW, -legH + lOff, legW, legH, 3); fillShape(c, '#222');
+  c.beginPath(); rr(c, -legGap - legW - 1, lOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#111');
+  c.beginPath(); rr(c, legGap, -legH + rOff, legW, legH, 3); fillShape(c, '#222');
+  c.beginPath(); rr(c, legGap - 1, rOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#111');
+
+  // --- BODY ---
+  const bodyW = 32, bodyH = 24;
+  const bodyY = -legH - bodyH + 6 + bounce;
+
+  // --- FACE ---
+  drawFace(c, loulouFaceImg, loulouFaceLoaded, bodyY, 50, 16);
+
+  // --- BODY (black shirt) ---
+  c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, 6); fillShape(c, '#1a1a1a');
+  c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 8, 4); fillOnly(c, 'rgba(255,255,255,0.04)');
+
+  // --- ARMS ---
+  const armW = 10, armH = 22, armY = bodyY + 3;
+  if (isHug) {
+    // Arms reaching forward for hug
+    c.beginPath(); rr(c, bodyW/2-2, armY-6, armW, armH-2, 5); fillShape(c, '#1a1a1a');
+    c.beginPath(); c.arc(bodyW/2+armW-2, armY-6+armH/2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+    c.beginPath(); rr(c, -bodyW/2-armW+3, armY, armW, armH, 5); fillShape(c, '#1a1a1a');
+    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+  } else {
+    let laSwing = 0, raSwing = 0;
+    if (wf === 1) { laSwing = 2; raSwing = -2; }
+    else if (wf === 3) { laSwing = -2; raSwing = 2; }
+    c.beginPath(); rr(c, -bodyW/2-armW+3, armY+laSwing, armW, armH, 5); fillShape(c, '#1a1a1a');
+    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+2+laSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+    c.beginPath(); rr(c, bodyW/2-3, armY+raSwing, armW, armH, 5); fillShape(c, '#1a1a1a');
+    c.beginPath(); c.arc(bodyW/2+armW/2-3, armY+armH+2+raSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+  }
+
+  // --- NECKLACE ---
+  c.strokeStyle = '#DAA520'; c.lineWidth = 2.5;
+  c.beginPath(); c.arc(0, bodyY+3, 10, 0.3, Math.PI-0.3); c.stroke();
+  c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+13, 2.5, 0, Math.PI*2); c.fill();
 
   c.restore();
 }
 
 // ============================================================
-// DRAW ZOUZOU (Bot)
+// DRAW ZOUZOU (pose: 'run' | 'idle' | 'hug')
 // ============================================================
-function drawZouzou(c, bx, by, frame, facing, scale) {
-  const s = scale || 1;
+function drawZouzou(c, bx, by, frame, facing, scl, pose) {
+  const sc = scl || 1;
+  pose = pose || (bot.moving ? 'run' : 'idle');
   c.save();
   c.translate(bx, by);
-  c.scale(s, s);
-  if (facing < 0) c.scale(-1, 1);
+  c.scale(sc * (facing >= 0 ? 1 : -1), sc);
 
-  const r = (x, y, w, h, col) => px(c, x, y, w, h, col);
-  const walk = bot.moving ? Math.floor(frame / 6) % 4 : 0;
+  const isRun = pose === 'run';
+  const isHug = pose === 'hug';
+  const wf = isRun ? Math.floor(frame / 5) % 4 : 0;
+  const bounce = isRun ? Math.sin(frame * 0.35) * 2 : 0;
 
-  // Hair (brown, longer, past shoulders)
-  r(-4, -22, 8, 3, C_ZOU.hair);
-  r(-5, -19, 10, 2, C_ZOU.hair);
-  r(-5, -19, 2, 10, C_ZOU.hair);  // left long
-  r(4, -19, 2, 10, C_ZOU.hair);   // right long
-  r(-4, -22, 1, 3, C_ZOU.hairDk);
-
-  // Head
-  r(-4, -17, 8, 8, C_ZOU.skin);
-
-  // BIG SQUARE GLASSES (tortoiseshell, oversized!)
-  // Left frame
-  r(-5, -16, 5, 4, C_ZOU.frame);
-  // Left lens
-  r(-4, -15, 3, 2, C_ZOU.lens);
-  // Right frame
-  r(0, -16, 5, 4, C_ZOU.frame);
-  // Right lens
-  r(1, -15, 3, 2, C_ZOU.lens);
-  // Bridge
-  r(-1, -15, 2, 1, C_ZOU.frameDk);
-
-  // Eyes behind glasses
-  r(-4, -15, 1, 1, C_ZOU.eyeW);
-  r(-3, -15, 1, 1, C_ZOU.eye);
-  r(2, -15, 1, 1, C_ZOU.eyeW);
-  r(3, -15, 1, 1, C_ZOU.eye);
-
-  // Cheeks
-  r(-4, -12, 1, 1, C_ZOU.cheek);
-  r(3, -12, 1, 1, C_ZOU.cheek);
-
-  // Mouth (pink lips - cute smile)
-  r(-1, -11, 2, 1, C_ZOU.mouth);
-
-  // Green top - draw before neck details
-  r(-4, -7, 8, 4, C_ZOU.top);
-
-  // Arms (green)
-  r(-5, -6, 1, 3, C_ZOU.top);
-  r(4, -6, 1, 3, C_ZOU.top);
-
-  // Hands
-  r(-5, -3, 1, 1, C_ZOU.skin);
-  r(4, -3, 1, 1, C_ZOU.skin);
-
-  // Neck (on top of shirt)
-  r(-1, -8, 2, 1, C_ZOU.skin);
-
-  // Necklace (on top of shirt)
-  r(-2, -7, 4, 1, C_ZOU.gold);
-
-  // Jeans + shoes (animated)
-  if (walk === 0 || walk === 2) {
-    r(-3, -3, 2, 3, C_ZOU.jeans);
-    r(1, -3, 2, 3, C_ZOU.jeans);
-    r(-3, 0, 2, 1, C_ZOU.shoes);
-    r(1, 0, 2, 1, C_ZOU.shoes);
-  } else if (walk === 1) {
-    r(-3, -3, 2, 3, C_ZOU.jeans);
-    r(1, -2, 2, 3, C_ZOU.jeans);
-    r(-3, 0, 2, 1, C_ZOU.shoes);
-    r(1, 1, 2, 1, C_ZOU.shoes);
-  } else {
-    r(-3, -2, 2, 3, C_ZOU.jeans);
-    r(1, -3, 2, 3, C_ZOU.jeans);
-    r(-3, 1, 2, 1, C_ZOU.shoes);
-    r(1, 0, 2, 1, C_ZOU.shoes);
+  // --- LEGS (jeans) ---
+  const legW = 10, legH = 16, legGap = 4;
+  let lOff = 0, rOff = 0;
+  if (isRun) {
+    if (wf === 1) { lOff = -4; rOff = 3; }
+    else if (wf === 3) { lOff = 3; rOff = -4; }
   }
+  c.beginPath(); rr(c, -legGap - legW, -legH + lOff, legW, legH, 3); fillShape(c, '#4A6FA5');
+  c.beginPath(); rr(c, -legGap - legW - 1, lOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#C9B896');
+  c.beginPath(); rr(c, legGap, -legH + rOff, legW, legH, 3); fillShape(c, '#4A6FA5');
+  c.beginPath(); rr(c, legGap - 1, rOff - 2, legW + 3, 7, [2,2,4,4]); fillShape(c, '#C9B896');
+
+  // --- BODY ---
+  const bodyW = 30, bodyH = 22;
+  const bodyY = -legH - bodyH + 6 + bounce;
+
+  // --- FACE ---
+  drawFace(c, zouzouFaceImg, zouzouFaceLoaded, bodyY, 48, 16);
+
+  // --- BODY (green top) ---
+  c.beginPath(); rr(c, -bodyW/2, bodyY, bodyW, bodyH, 6); fillShape(c, '#2E8B57');
+  c.beginPath(); rr(c, -bodyW/2+3, bodyY+2, bodyW-6, 7, 4); fillOnly(c, 'rgba(255,255,255,0.07)');
+  c.beginPath(); rr(c, -bodyW/2+2, bodyY+bodyH-8, bodyW-4, 6, 4); fillOnly(c, 'rgba(0,0,0,0.08)');
+
+  // --- ARMS ---
+  const armW = 9, armH = 20, armY = bodyY + 3;
+  if (isHug) {
+    // Arms reaching forward for hug
+    c.beginPath(); rr(c, bodyW/2-2, armY-6, armW, armH-2, 5); fillShape(c, '#2E8B57');
+    c.beginPath(); c.arc(bodyW/2+armW-2, armY-6+armH/2, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+    c.beginPath(); rr(c, -bodyW/2-armW+3, armY, armW, armH, 5); fillShape(c, '#2E8B57');
+    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+1, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+  } else {
+    let laSwing = 0, raSwing = 0;
+    if (wf === 1) { laSwing = 2; raSwing = -2; }
+    else if (wf === 3) { laSwing = -2; raSwing = 2; }
+    c.beginPath(); rr(c, -bodyW/2-armW+3, armY+laSwing, armW, armH, 5); fillShape(c, '#2E8B57');
+    c.beginPath(); c.arc(-bodyW/2-armW/2+3, armY+armH+1+laSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+    c.beginPath(); rr(c, bodyW/2-3, armY+raSwing, armW, armH, 5); fillShape(c, '#2E8B57');
+    c.beginPath(); c.arc(bodyW/2+armW/2-3, armY+armH+1+raSwing, 5, 0, Math.PI*2); fillShape(c, '#FDDCB5');
+  }
+
+  // --- NECKLACE ---
+  c.strokeStyle = '#DAA520'; c.lineWidth = 2;
+  c.beginPath(); c.arc(0, bodyY+3, 9, 0.3, Math.PI-0.3); c.stroke();
+  c.fillStyle = '#DAA520'; c.beginPath(); c.arc(0, bodyY+12, 2, 0, Math.PI*2); c.fill();
 
   c.restore();
 }
@@ -410,7 +358,7 @@ function drawHeart(c, x, y, size, color) {
 // ============================================================
 function spawnHeart(x, y, burst) {
   const angle = Math.random() * Math.PI * 2;
-  const speed = burst ? 80 + Math.random() * 150 : 20 + Math.random() * 40;
+  const speed = burst ? 80 + Math.random() * 160 : 20 + Math.random() * 40;
   const colors = ['#ff4d6d', '#ff6b8a', '#ff8fa3', '#ffb3c6', '#ff1744', '#e91e63'];
   hearts.push({
     x, y,
@@ -449,7 +397,7 @@ function drawHearts(c) {
 }
 
 // ============================================================
-// BACKGROUND HEARTS (floating)
+// BACKGROUND
 // ============================================================
 function initBgHearts() {
   const container = document.getElementById('heartsBg');
@@ -465,9 +413,6 @@ function initBgHearts() {
   }
 }
 
-// ============================================================
-// GAME BACKGROUND
-// ============================================================
 function drawGameBg(c) {
   const grad = c.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, '#1e0f28');
@@ -475,12 +420,8 @@ function drawGameBg(c) {
   grad.addColorStop(1, '#1a0a1e');
   c.fillStyle = grad;
   c.fillRect(0, 0, W, H);
-
-  // Subtle ground
   c.fillStyle = 'rgba(255,107,138,0.03)';
   c.fillRect(0, H * 0.85, W, H * 0.15);
-
-  // Ambient floating hearts in game
   for (const h of bgHearts) {
     c.save();
     c.globalAlpha = h.alpha;
@@ -493,8 +434,7 @@ function drawGameBg(c) {
 function updateBgHearts(dt) {
   if (bgHearts.length < 8 && Math.random() < dt * 0.5) {
     bgHearts.push({
-      x: Math.random() * W,
-      y: H + 20,
+      x: Math.random() * W, y: H + 20,
       size: 5 + Math.random() * 12,
       speed: 15 + Math.random() * 25,
       alpha: 0.05 + Math.random() * 0.1
@@ -507,64 +447,54 @@ function updateBgHearts(dt) {
 }
 
 // ============================================================
-// NAME LABELS
+// LABELS AND SHADOWS
 // ============================================================
 function drawCharShadow(c, x, y) {
   c.save();
-  c.globalAlpha = 0.25;
+  c.globalAlpha = 0.2;
   c.fillStyle = '#000';
   c.beginPath();
-  c.ellipse(x, y + 4, 18, 6, 0, 0, Math.PI * 2);
+  c.ellipse(x, y + 6, 22, 7, 0, 0, Math.PI * 2);
   c.fill();
   c.restore();
 }
 
 function drawLabel(c, x, y, name, color) {
-  c.font = 'bold 12px Georgia, serif';
+  c.font = 'bold 13px Georgia, serif';
   c.textAlign = 'center';
-  c.fillStyle = 'rgba(0,0,0,0.4)';
+  c.fillStyle = 'rgba(0,0,0,0.5)';
   c.fillText(name, x + 1, y + 1);
   c.fillStyle = color;
   c.fillText(name, x, y);
 }
 
 // ============================================================
-// INPUT HANDLING
+// INPUT
 // ============================================================
 function setupInput() {
   window.addEventListener('keydown', e => {
     keys[e.key.toLowerCase()] = true;
-    if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) {
-      e.preventDefault();
-    }
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault();
   });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-  // Touch controls
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    const t = e.touches[0];
-    touchStartX = t.clientX;
-    touchStartY = t.clientY;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
     touchActive = true;
   });
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     if (!touchActive) return;
-    const t = e.touches[0];
-    const dx = t.clientX - touchStartX;
-    const dy = t.clientY - touchStartY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 10) {
-      touchDir.x = dx / dist;
-      touchDir.y = dy / dist;
-    }
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > 10) { touchDir.x = dx / d; touchDir.y = dy / d; }
   });
   canvas.addEventListener('touchend', e => {
     e.preventDefault();
     touchActive = false;
-    touchDir.x = 0;
-    touchDir.y = 0;
+    touchDir.x = 0; touchDir.y = 0;
   });
 }
 
@@ -574,15 +504,9 @@ function getInputDir() {
   if (keys['s'] || keys['arrowdown']) dy += 1;
   if (keys['a'] || keys['arrowleft']) dx -= 1;
   if (keys['d'] || keys['arrowright']) dx += 1;
-
-  if (touchActive && (touchDir.x !== 0 || touchDir.y !== 0)) {
-    dx = touchDir.x;
-    dy = touchDir.y;
-  }
-
+  if (touchActive && (touchDir.x || touchDir.y)) { dx = touchDir.x; dy = touchDir.y; }
   const len = Math.sqrt(dx * dx + dy * dy);
-  if (len > 0) return { x: dx / len, y: dy / len };
-  return { x: 0, y: 0 };
+  return len > 0 ? { x: dx / len, y: dy / len } : { x: 0, y: 0 };
 }
 
 // ============================================================
@@ -592,85 +516,66 @@ function updateBot(dt) {
   const dx = bot.x - player.x;
   const dy = bot.y - player.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  const margin = 40;
+  const margin = 50;
 
-  // Random pause mechanic
   bot.pauseTimer -= dt;
-  if (!bot.paused && Math.random() < dt * 0.15 && dist > 180) {
+  if (!bot.paused && Math.random() < dt * 0.12 && dist > 200) {
     bot.paused = true;
     bot.pauseTimer = 0.3 + Math.random() * 0.6;
   }
-  if (bot.paused && bot.pauseTimer <= 0) {
-    bot.paused = false;
-  }
+  if (bot.paused && bot.pauseTimer <= 0) bot.paused = false;
 
   if (bot.paused) {
-    bot.vx *= 0.9;
-    bot.vy *= 0.9;
+    bot.vx *= 0.9; bot.vy *= 0.9;
     bot.moving = false;
-  } else if (dist < 160) {
-    // Run away directly
-    const flee = dist > 0 ? 1 / dist : 1;
-    bot.vx += dx * flee * BOT_SPEED * 5 * dt;
-    bot.vy += dy * flee * BOT_SPEED * 5 * dt;
+  } else if (dist < 180) {
+    const f = dist > 0 ? 1 / dist : 1;
+    bot.vx += dx * f * BOT_SPEED * 5 * dt;
+    bot.vy += dy * f * BOT_SPEED * 5 * dt;
     bot.moving = true;
   } else {
-    // Wander vaguely away
     bot.changeTimer -= dt;
     if (bot.changeTimer <= 0) {
-      const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 2;
-      bot.vx = Math.cos(angle) * BOT_SPEED * 0.6;
-      bot.vy = Math.sin(angle) * BOT_SPEED * 0.6;
+      const a = Math.atan2(dy, dx) + (Math.random() - 0.5) * 2;
+      bot.vx = Math.cos(a) * BOT_SPEED * 0.6;
+      bot.vy = Math.sin(a) * BOT_SPEED * 0.6;
       bot.changeTimer = 0.8 + Math.random() * 1.5;
     }
     bot.moving = true;
   }
 
-  // Clamp speed
   const spd = Math.sqrt(bot.vx * bot.vx + bot.vy * bot.vy);
-  if (spd > BOT_SPEED) {
-    bot.vx = (bot.vx / spd) * BOT_SPEED;
-    bot.vy = (bot.vy / spd) * BOT_SPEED;
-  }
-
-  // Friction
+  if (spd > BOT_SPEED) { bot.vx = (bot.vx / spd) * BOT_SPEED; bot.vy = (bot.vy / spd) * BOT_SPEED; }
   bot.vx *= Math.pow(0.02, dt);
   bot.vy *= Math.pow(0.02, dt);
-
   bot.x += bot.vx * dt;
   bot.y += bot.vy * dt;
 
-  // Wall bounce
-  if (bot.x < margin) { bot.x = margin; bot.vx = Math.abs(bot.vx) * 0.8; }
-  if (bot.x > W - margin) { bot.x = W - margin; bot.vx = -Math.abs(bot.vx) * 0.8; }
-  if (bot.y < margin + 30) { bot.y = margin + 30; bot.vy = Math.abs(bot.vy) * 0.8; }
-  if (bot.y > H - margin) { bot.y = H - margin; bot.vy = -Math.abs(bot.vy) * 0.8; }
-
-  // Facing
+  if (bot.x < margin) { bot.x = margin; bot.vx = Math.abs(bot.vx); }
+  if (bot.x > W - margin) { bot.x = W - margin; bot.vx = -Math.abs(bot.vx); }
+  if (bot.y < margin + 40) { bot.y = margin + 40; bot.vy = Math.abs(bot.vy); }
+  if (bot.y > H - margin) { bot.y = H - margin; bot.vy = -Math.abs(bot.vy); }
   if (Math.abs(bot.vx) > 5) bot.facing = bot.vx > 0 ? 1 : -1;
 }
 
 // ============================================================
-// PLAYER UPDATE
+// PLAYER
 // ============================================================
 function updatePlayer(dt) {
   const dir = getInputDir();
   player.vx = dir.x * PLAYER_SPEED;
   player.vy = dir.y * PLAYER_SPEED;
   player.moving = dir.x !== 0 || dir.y !== 0;
-
   player.x += player.vx * dt;
   player.y += player.vy * dt;
-
-  const margin = 30;
+  const margin = 40;
   player.x = Math.max(margin, Math.min(W - margin, player.x));
-  player.y = Math.max(margin + 30, Math.min(H - margin, player.y));
-
+  player.y = Math.max(margin + 40, Math.min(H - margin, player.y));
   if (Math.abs(player.vx) > 5) player.facing = player.vx > 0 ? 1 : -1;
 }
 
 // ============================================================
-// COLLISION CHECK
+// COLLISION
 // ============================================================
 function checkCatch() {
   const dx = player.x - bot.x;
@@ -679,22 +584,17 @@ function checkCatch() {
 }
 
 // ============================================================
-// CATCH CELEBRATION
+// CATCH
 // ============================================================
 function triggerCatch() {
   gameState = 'caught';
-
-  // Spawn burst of hearts
-  for (let i = 0; i < 40; i++) {
-    spawnHeart((player.x + bot.x) / 2, (player.y + bot.y) / 2 - 30, true);
+  for (let i = 0; i < 50; i++) {
+    spawnHeart((player.x + bot.x) / 2, (player.y + bot.y) / 2 - 40, true);
   }
-
-  // Show overlay after a short delay
   setTimeout(() => {
     const overlay = document.getElementById('catchOverlay');
     overlay.style.display = 'flex';
-    document.getElementById('timerText').textContent =
-      'Caught in ' + gameTime.toFixed(1) + ' seconds!';
+    document.getElementById('timerText').textContent = 'Caught in ' + gameTime.toFixed(1) + ' seconds!';
     drawCatchScene();
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }, 1200);
@@ -704,25 +604,21 @@ function drawCatchScene() {
   const cc = catchCtx;
   const cw = catchCanvas.width;
   const ch = catchCanvas.height;
-
   cc.clearRect(0, 0, cw, ch);
-
-  // Draw both characters close together (hugging)
   const cx = cw / 2;
-  const cy = ch * 0.75;
+  const cy = ch * 0.8;
 
-  drawLoulou(cc, cx - 24, cy, 0, 1, 1.3);
-  drawZouzou(cc, cx + 24, cy, 0, -1, 1.3);
+  // Draw characters in hug pose, close together
+  drawLoulou(cc, cx - 18, cy, 0, 1, 1.3, 'hug');
+  drawZouzou(cc, cx + 18, cy, 0, -1, 1.3, 'hug');
 
-  // Heart above them
-  drawHeart(cc, cx, cy - 110, 16, '#ff4d6d');
-
-  // Small hearts around
-  drawHeart(cc, cx - 55, cy - 85, 7, '#ff8fa3');
-  drawHeart(cc, cx + 55, cy - 80, 8, '#ffb3c6');
-  drawHeart(cc, cx - 40, cy - 115, 6, '#ff6b8a');
-  drawHeart(cc, cx + 45, cy - 112, 5, '#ff4d6d');
-  drawHeart(cc, cx, cy - 135, 5, '#ffb3c6');
+  // Floating hearts around the hugging couple
+  drawHeart(cc, cx, cy - 130, 18, '#ff4d6d');
+  drawHeart(cc, cx - 60, cy - 105, 8, '#ff8fa3');
+  drawHeart(cc, cx + 60, cy - 100, 9, '#ffb3c6');
+  drawHeart(cc, cx - 45, cy - 130, 6, '#ff6b8a');
+  drawHeart(cc, cx + 50, cy - 128, 5, '#ff4d6d');
+  drawHeart(cc, cx, cy - 155, 6, '#ffb3c6');
 }
 
 // ============================================================
@@ -739,7 +635,6 @@ function initGame() {
   setupInput();
   initBgHearts();
 
-  // Play button
   document.getElementById('playBtn').addEventListener('click', startGame);
   document.getElementById('replayBtn').addEventListener('click', () => {
     document.getElementById('catchOverlay').classList.remove('visible');
@@ -749,11 +644,9 @@ function initGame() {
     }, 600);
   });
 
-  // Detect mobile
   if ('ontouchstart' in window) {
     document.getElementById('instructions').textContent = 'Touch and drag to move';
   }
-
   requestAnimationFrame(gameLoop);
 }
 
@@ -766,32 +659,22 @@ function resizeCanvas() {
 
 function startGame() {
   gameState = 'playing';
-  gameTime = 0;
-  frameCount = 0;
-  hearts = [];
-  bgHearts = [];
+  gameTime = 0; frameCount = 0;
+  hearts = []; bgHearts = [];
 
-  // Position characters
-  player.x = W * 0.25;
-  player.y = H * 0.5;
+  player.x = W * 0.25; player.y = H * 0.55;
   player.vx = 0; player.vy = 0;
-  player.facing = 1;
-  player.moving = false;
+  player.facing = 1; player.moving = false;
 
-  bot.x = W * 0.75;
-  bot.y = H * 0.5;
+  bot.x = W * 0.75; bot.y = H * 0.55;
   bot.vx = 0; bot.vy = 0;
-  bot.facing = -1;
-  bot.moving = false;
-  bot.changeTimer = 1;
-  bot.paused = false;
-  bot.pauseTimer = 0;
+  bot.facing = -1; bot.moving = false;
+  bot.changeTimer = 1; bot.paused = false; bot.pauseTimer = 0;
 
   document.getElementById('landing').classList.add('hidden');
   canvas.style.display = 'block';
   document.getElementById('instructions').style.display = 'block';
-
-  // Fade out instructions after a few seconds
+  document.getElementById('instructions').style.opacity = '1';
   setTimeout(() => {
     document.getElementById('instructions').style.opacity = '0';
   }, 4000);
@@ -807,46 +690,36 @@ function gameLoop(timestamp) {
   if (gameState === 'playing') {
     gameTime += dt;
     frameCount++;
-
     updatePlayer(dt);
     updateBot(dt);
     updateBgHearts(dt);
     updateHearts(dt);
 
-    // Zouzou trail hearts
-    if (bot.moving && frameCount % 20 === 0) {
+    if (bot.moving && frameCount % 25 === 0) {
       spawnHeart(bot.x, bot.y, false);
     }
 
-    // Check collision
-    if (checkCatch()) {
-      triggerCatch();
-    }
+    if (checkCatch()) triggerCatch();
 
-    // Render
     drawGameBg(ctx);
 
-    // Draw timer
     ctx.font = '14px Georgia, serif';
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(255,179,198,0.4)';
     ctx.fillText(gameTime.toFixed(1) + 's', W - 15, 25);
 
-    // Draw characters (bot behind player)
     drawCharShadow(ctx, bot.x, bot.y);
     drawZouzou(ctx, bot.x, bot.y, frameCount, bot.facing);
-    drawLabel(ctx, bot.x, bot.y + 16, 'Zouzou', '#ffb3c6');
+    drawLabel(ctx, bot.x, bot.y + 18, 'Zouzou', '#ffb3c6');
 
     drawCharShadow(ctx, player.x, player.y);
     drawLoulou(ctx, player.x, player.y, frameCount, player.facing);
-    drawLabel(ctx, player.x, player.y + 16, 'Loulou', '#ff8fa3');
+    drawLabel(ctx, player.x, player.y + 18, 'Loulou', '#ff8fa3');
 
     drawHearts(ctx);
   } else if (gameState === 'caught') {
-    // Continue rendering the caught moment
     updateHearts(dt);
     drawGameBg(ctx);
-
     drawCharShadow(ctx, bot.x, bot.y);
     drawZouzou(ctx, bot.x, bot.y, 0, bot.facing);
     drawCharShadow(ctx, player.x, player.y);
@@ -857,9 +730,6 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
-// ============================================================
-// INIT
-// ============================================================
 window.addEventListener('DOMContentLoaded', initGame);
 </script>
 </body>
